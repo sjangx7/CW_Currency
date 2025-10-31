@@ -7,7 +7,7 @@ Date: October 2025
 Author: Sae Jang (s2432618)
 
 Description:
-This APK was built using Android Studio 
+This APK was built using Android Studio
 from the CW_Currency project for the Mobile Platform Development module.
 
 Installation:
@@ -23,4 +23,3 @@ Notes:
 
 For demonstration video and full testing evidence,
 see coursework report and video link in the main README.
-
