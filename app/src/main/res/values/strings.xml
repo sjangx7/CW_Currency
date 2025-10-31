@@ -1,0 +1,10 @@
+<resources>
+    <string name="app_name">CW Currency</string>
+    <string name="flag">Flag</string>
+    <string name="legend_text">Legend: &lt;1 | 1–5 | 5–10 | &gt;10</string>
+    <string name="close_converter">Close converter</string>
+    <string name="hint_enter_amount">Enter amount</string>
+    <string name="convert">Convert</string>
+    <string name="currency_row_cd">Currency row</string>
+    <string name="cd_currency_full">%1$s, %2$s. Rate: %3$s</string>SS
+</resources>

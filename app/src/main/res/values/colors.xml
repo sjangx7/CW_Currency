@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="rate_lt_1">#FFB3E5FC</color>      <!-- light blue -->
+    <color name="rate_1_5">#FFC8E6C9</color>      <!-- light green -->
+    <color name="rate_5_10">#FFFFF9C4</color>     <!-- light yellow -->
+    <color name="rate_gt_10">#FFFFCDD2</color>    <!-- light red -->
+    <color name="teal_200">#03DAC5</color>
+    <color name="teal_700">#018786</color>
+</resources>
