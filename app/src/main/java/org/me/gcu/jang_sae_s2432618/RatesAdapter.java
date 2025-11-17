@@ -1,4 +1,4 @@
-package org.me.gcu.cw_currency.s2432618;
+package org.me.gcu.jang_sae_s2432618;
 
 import android.graphics.drawable.Drawable;
 import android.view.LayoutInflater;
@@ -10,6 +10,7 @@ import androidx.annotation.NonNull;
 import androidx.core.content.ContextCompat;
 import androidx.core.graphics.drawable.DrawableCompat;
 import androidx.recyclerview.widget.RecyclerView;
+
 
 import java.util.ArrayList;
 import java.util.List;
@@ -27,7 +28,7 @@ public class RatesAdapter extends RecyclerView.Adapter<RatesAdapter.VH> {
     public void submitList(List<RateItem> list) {
         data.clear();
         if (list != null) data.addAll(list);
-        notifyDataSetChanged(); // simple; fine for coursework
+        notifyDataSetChanged();
     }
 
     @NonNull
@@ -52,7 +53,7 @@ public class RatesAdapter extends RecyclerView.Adapter<RatesAdapter.VH> {
                 )
         );
 
-        // Flag + code + name (FlagUtil may be your own helper; guard if absent)
+        // Flag + code + name
         String flag = "";
         try {
             flag = FlagUtil.flagForCurrency(it.code);

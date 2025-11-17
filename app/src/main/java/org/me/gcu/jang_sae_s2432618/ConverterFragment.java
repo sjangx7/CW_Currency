@@ -1,4 +1,4 @@
-package org.me.gcu.cw_currency.s2432618;
+package org.me.gcu.jang_sae_s2432618;
 
 import android.os.Bundle;
 import android.text.TextUtils;
@@ -70,7 +70,7 @@ public class ConverterFragment extends Fragment {
         }
 
         pairTitle      = v.findViewById(R.id.pairTitle);
-        rateInfo       = v.findViewById(R.id.rateInfo);   // <- this is your "rateLabel"
+        rateInfo       = v.findViewById(R.id.rateInfo);
         resultText     = v.findViewById(R.id.resultText);
         warnText       = v.findViewById(R.id.warnText);
         directionGroup = v.findViewById(R.id.directionGroup);
@@ -90,7 +90,7 @@ public class ConverterFragment extends Fragment {
 
         pairTitle.setText(String.format(Locale.UK, "GBP ↔ %s", code));
 
-        // `rateInfo` is that label. Put it RIGHT HERE after pairTitle is set:
+
         rateInfo.setText(String.format(
                 Locale.UK,
                 "Rate (GBP : %s): %s",

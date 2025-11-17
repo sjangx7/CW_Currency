@@ -6,7 +6,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
-    <!-- LEFT PANEL: List, search, and buttons -->
+
     <LinearLayout
         android:id="@+id/leftPane"
         android:orientation="vertical"
@@ -30,7 +30,6 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content" />
 
-        <!-- Error banner -->
         <TextView
             android:id="@+id/errorBanner"
             android:text=""
@@ -41,7 +40,6 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content" />
 
-        <!-- Search -->
         <androidx.appcompat.widget.SearchView
             android:id="@+id/searchView"
             android:layout_marginTop="12dp"
@@ -51,7 +49,7 @@
             android:background="@drawable/border"
             app:iconifiedByDefault="false" />
 
-        <!-- Quick currency buttons -->
+
         <LinearLayout
             android:id="@+id/mainPairsRow"
             android:orientation="horizontal"
@@ -84,7 +82,7 @@
                 android:layout_weight="1" />
         </LinearLayout>
 
-        <!-- Rates list -->
+
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/ratesList"
             android:layout_marginTop="12dp"
@@ -92,7 +90,7 @@
             android:layout_height="0dp"
             android:layout_weight="1" />
 
-        <!-- Legend text -->
+
         <TextView
             android:id="@+id/legend"
             android:text="@string/legend_text"
@@ -101,7 +99,7 @@
             android:layout_height="wrap_content" />
     </LinearLayout>
 
-    <!-- RIGHT PANEL: Converter fragment area -->
+
     <LinearLayout
         android:id="@+id/rightPane"
         android:orientation="vertical"
@@ -110,13 +108,13 @@
         android:layout_weight="1"
         android:paddingStart="8dp">
 
-        <!-- Toolbar -->
+
         <com.google.android.material.appbar.MaterialToolbar
             android:id="@+id/topAppBar"
             android:layout_width="match_parent"
             android:layout_height="wrap_content" />
 
-        <!-- Converter Fragment container -->
+
         <FrameLayout
             android:id="@+id/converterContainer"
             android:layout_width="match_parent"

@@ -1,4 +1,4 @@
-package org.me.gcu.cw_currency.s2432618;
+package org.me.gcu.jang_sae_s2432618;
 
 import android.content.Context;
 

@@ -1,16 +1,22 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="org.me.gcu.jang_sae_s2432618">
 
+    <!-- Needed to download the RSS feed -->
     <uses-permission android:name="android.permission.INTERNET" />
+
+    <!-- Optional: lets you check if the device is online before fetching -->
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 
     <application
         android:allowBackup="true"
-        android:label="@string/app_name"
         android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.CW_currency">
 
-        <!-- Launcher screen -->
+        <!-- Launcher activity -->
         <activity
             android:name=".MainActivity"
             android:exported="true">
@@ -19,6 +25,7 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
 
     </application>
 </manifest>

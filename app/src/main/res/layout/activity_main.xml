@@ -10,7 +10,7 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent">
 
-        <!-- PAGE 1: your existing UI (unchanged) -->
+      
         <LinearLayout
             android:orientation="vertical"
             android:padding="16dp"
@@ -99,7 +99,7 @@
                 android:layout_height="wrap_content" />
         </LinearLayout>
 
-        <!-- PAGE 2: full-screen converter host -->
+
         <LinearLayout
             android:orientation="vertical"
             android:layout_width="match_parent"

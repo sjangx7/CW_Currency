@@ -1,4 +1,4 @@
-package org.me.gcu.cw_currency.s2432618;
+package org.me.gcu.jang_sae_s2432618;
 
 import android.content.Context;
 import android.content.SharedPreferences;
@@ -23,29 +23,10 @@ import com.google.android.material.appbar.MaterialToolbar;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-/**
- * Main Activity — handles the currency rates list, search, and in-app converter (single-activity flow)
- */
 public class MainActivity extends AppCompatActivity {
 
-    // --------------------------------------------------------------------------------------------
-    // Constants
-    // --------------------------------------------------------------------------------------------
-
+    // RSS feed we use for the currency data
     private static final String URL_SOURCE = "https://www.fx-exchange.com/gbp/rss.xml";
-
-    // Demo fallback XML for offline/diagnostic use
-    private static final String DEMO_XML =
-            "<?xml version=\"1.0\" encoding=\"UTF-8\"?><rss><channel>"
-                    + "<title>Demo GBP Rates</title>"
-                    + "<lastBuildDate>Tue, 14 Oct 2025 06:00:55 UTC</lastBuildDate>"
-                    + "<item><title>AED - United Arab Emirates Dirham</title><description>4.9471</description></item>"
-                    + "<item><title>JPY - Japanese Yen</title><description>183.4200</description></item>"
-                    + "</channel></rss>";
-
-    // --------------------------------------------------------------------------------------------
-    // Views & fields
-    // --------------------------------------------------------------------------------------------
 
     private RatesViewModel vm;
     private RatesAdapter adapter;
@@ -55,65 +36,62 @@ public class MainActivity extends AppCompatActivity {
     private SearchView searchView;
     private View btnUSD, btnEUR, btnJPY;
 
-    // Second page (converter)
+    // second screen (converter)
     private android.widget.ViewFlipper vf;
     private MaterialToolbar topAppBar;
 
-    // Track last applied RSS to avoid unnecessary refreshes
-    private String lastAppliedRss = "";
+    private SharedPreferences sp;
+    private SharedPreferences.OnSharedPreferenceChangeListener spListener;
 
-    // --------------------------------------------------------------------------------------------
-    // Lifecycle
-    // --------------------------------------------------------------------------------------------
+    // remember last RSS we actually used so we don’t refresh for no reason
+    private String lastAppliedRss = "";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        // --- View lookups ---
-        vf = findViewById(R.id.vf);
-        topAppBar = findViewById(R.id.topAppBar);
-        titleText = findViewById(R.id.titleText);
+        vf          = findViewById(R.id.vf);
+        topAppBar   = findViewById(R.id.topAppBar);
+        titleText   = findViewById(R.id.titleText);
         updatedText = findViewById(R.id.updatedText);
         errorBanner = findViewById(R.id.errorBanner);
-        list = findViewById(R.id.ratesList);
-        searchView = findViewById(R.id.searchView);
-        btnUSD = findViewById(R.id.btnUSD);
-        btnEUR = findViewById(R.id.btnEUR);
-        btnJPY = findViewById(R.id.btnJPY);
+        list        = findViewById(R.id.ratesList);
+        searchView  = findViewById(R.id.searchView);
+        btnUSD      = findViewById(R.id.btnUSD);
+        btnEUR      = findViewById(R.id.btnEUR);
+        btnJPY      = findViewById(R.id.btnJPY);
 
-        // --- Toolbar setup ---
+        if (errorBanner != null) errorBanner.setVisibility(View.GONE);
+
+        // top bar back button + title for converter screen
         if (topAppBar != null) {
             topAppBar.setNavigationIcon(R.drawable.ic_arrow_back_24);
             topAppBar.setNavigationOnClickListener(v -> goBackOrFinish());
             topAppBar.setTitle("Converter");
         }
 
-        // --- ViewModel ---
         vm = new ViewModelProvider(this).get(RatesViewModel.class);
 
-        // --- RecyclerView setup ---
+        // set up list + adapter
         adapter = new RatesAdapter(this::openConverter);
-        list.setLayoutManager(new LinearLayoutManager(this));
-        list.setHasFixedSize(true);
-        list.setItemAnimator(null);
-        list.setAdapter(adapter);
+        if (list != null) {
+            list.setLayoutManager(new LinearLayoutManager(this));
+            list.setHasFixedSize(true);
+            list.setItemAnimator(null);
+            list.setAdapter(adapter);
+        }
 
-        // --- SearchView setup ---
-        configureSearchView();
+        // search bar
+        if (searchView != null) configureSearchView();
 
-        // --- Quick currency buttons ---
+        // quick filter buttons for main currencies
         setupQuickButtons();
 
-        // --- ViewModel observers ---
+        // hook up live data from the view model
         observeViewModel();
 
-        // --- Demo data seed (for first load) ---
-        vm.refreshFromRssAsync(DEMO_XML);
-        vm.setQuery("");
-
-        // --- Background worker (refresh every 15 min) ---
+        // periodic background refresh (15 mins)
         PeriodicWorkRequest req =
                 new PeriodicWorkRequest.Builder(FetchRssWorker.class, 15, TimeUnit.MINUTES)
                         .setConstraints(FetchRssWorker.netConstraints())
@@ -125,59 +103,77 @@ public class MainActivity extends AppCompatActivity {
                 req
         );
 
-        // --- Initial fetch ---
+        // first load from the network
         fetchRssAndRefresh();
 
-        // --- Handle system back (converter page) ---
+        // handle back button when we’re on converter screen
         getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
             @Override public void handleOnBackPressed() { goBackOrFinish(); }
         });
+    }
 
-        // --- Long-press title to load demo ---
-        if (titleText != null) {
-            titleText.setOnLongClickListener(v -> {
-                vm.refreshFromRssAsync(DEMO_XML);
-                lastAppliedRss = DEMO_XML;
-                errorBanner.setText("");
-                errorBanner.setVisibility(View.GONE);
-                return true;
-            });
-        }
+    @Override
+    protected void onStart() {
+        super.onStart();
+        sp = getSharedPreferences(FetchRssWorker.PREFS, MODE_PRIVATE);
+
+        // listen for changes from the worker (new RSS or new timestamp)
+        spListener = (prefs, key) -> {
+            if (FetchRssWorker.KEY_RSS.equals(key)) {
+                String newer = prefs.getString(FetchRssWorker.KEY_RSS, "");
+                if (newer != null && !newer.isEmpty() && !newer.equals(lastAppliedRss)) {
+                    vm.refreshFromRssAsync(newer);
+                    lastAppliedRss = newer;
+                }
+            } else if (FetchRssWorker.KEY_FETCH_TS.equals(key)) {
+                // worker ran again, just bump the “Updated:” text
+                runOnUiThread(vm::markRefreshedNow);
+            }
+        };
+        sp.registerOnSharedPreferenceChangeListener(spListener);
     }
 
     @Override
     protected void onResume() {
         super.onResume();
-
-        // Reload cached data if newer
-        SharedPreferences sp = getSharedPreferences(FetchRssWorker.PREFS, MODE_PRIVATE);
-        String cached = sp.getString(FetchRssWorker.KEY_RSS, "");
+        // if cached RSS is newer than what we used, refresh from that
+        SharedPreferences spLocal = getSharedPreferences(FetchRssWorker.PREFS, MODE_PRIVATE);
+        String cached = spLocal.getString(FetchRssWorker.KEY_RSS, "");
         if (cached != null && !cached.trim().isEmpty() && !cached.equals(lastAppliedRss)) {
             vm.refreshFromRssAsync(cached);
             lastAppliedRss = cached;
         }
     }
 
-    // --------------------------------------------------------------------------------------------
-    // UI Setup helpers
-    // --------------------------------------------------------------------------------------------
+    @Override
+    protected void onStop() {
+        super.onStop();
+        if (sp != null && spListener != null) {
+            sp.unregisterOnSharedPreferenceChangeListener(spListener);
+        }
+    }
 
-    /** Configure SearchView appearance, behavior, and keyboard handling */
+    // ----------------- search and list setup -----------------
+
     private void configureSearchView() {
-        // Always expanded
+        // keep it always open, no icon
         searchView.setIconifiedByDefault(false);
         searchView.setIconified(false);
 
-        // Fix invisible text (ensure visible on white background)
+        // tweak text colour etc
         TextView svText = searchView.findViewById(androidx.appcompat.R.id.search_src_text);
-        svText.setTextColor(ContextCompat.getColor(this, android.R.color.black));
-        svText.setHintTextColor(0x99000000);
-        svText.setSingleLine(true);
+        if (svText != null) {
+            svText.setTextColor(ContextCompat.getColor(this, android.R.color.black));
+            svText.setHintTextColor(0x99000000);
+            svText.setSingleLine(true);
+        }
 
-        // Focus field when user taps anywhere
-        searchView.setOnClickListener(v -> svText.requestFocus());
+        // tap anywhere on the search to focus
+        searchView.setOnClickListener(v -> {
+            if (svText != null) svText.requestFocus();
+        });
 
-        // Handle query events
+        // when user types or submits, update the view model
         searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
             @Override public boolean onQueryTextSubmit(String query) {
                 vm.setQuery(query);
@@ -190,19 +186,21 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        // Hide keyboard when focus lost
+        // when search loses focus, close keyboard
         searchView.setOnQueryTextFocusChangeListener((v, hasFocus) -> {
             if (!hasFocus) hideKeyboardAndClearSearchFocus();
         });
 
-        // Hide keyboard if user scrolls/taps list
-        list.setOnTouchListener((v, event) -> {
-            hideKeyboardAndClearSearchFocus();
-            return false;
-        });
+        // scrolling the list should also close the keyboard
+        if (list != null) {
+            list.setOnTouchListener((v, event) -> {
+                hideKeyboardAndClearSearchFocus();
+                return false;
+            });
+        }
     }
 
-    /** Setup quick-currency buttons (USD, EUR, JPY) */
+    // set up the USD / EUR / JPY buttons
     private void setupQuickButtons() {
         View.OnClickListener mainPairClick = v -> {
             String wanted = (v.getId() == R.id.btnUSD) ? "USD"
@@ -210,33 +208,40 @@ public class MainActivity extends AppCompatActivity {
                     : "JPY";
 
             RateItem item = findByCode(vm.rates.getValue(), wanted);
-            if (item != null) openConverter(item);
-            else vm.setQuery(wanted); // fallback: pre-filter
+            if (item != null) {
+                openConverter(item);
+            } else {
+                // if we don’t have it loaded yet, at least filter the list
+                vm.setQuery(wanted);
+            }
         };
 
-        btnUSD.setOnClickListener(mainPairClick);
-        btnEUR.setOnClickListener(mainPairClick);
-        btnJPY.setOnClickListener(mainPairClick);
+        if (btnUSD != null) btnUSD.setOnClickListener(mainPairClick);
+        if (btnEUR != null) btnEUR.setOnClickListener(mainPairClick);
+        if (btnJPY != null) btnJPY.setOnClickListener(mainPairClick);
     }
 
-    /** Observe LiveData in the ViewModel */
+    // hook LiveData up to the UI
     private void observeViewModel() {
         vm.title.observe(this, t -> {
-            if (t != null && !t.isEmpty()) titleText.setText(t);
+            if (t != null && !t.isEmpty() && titleText != null) titleText.setText(t);
         });
 
-        vm.lastUpdated.observe(this, s ->
-                updatedText.setText("Updated: " + (s == null ? "—" : s))
-        );
+        vm.lastUpdated.observe(this, s -> {
+            if (updatedText != null) {
+                updatedText.setText("Updated: " + (s == null ? "—" : s));
+            }
+        });
 
         vm.filteredRates.observe(this, list -> {
-            adapter.submitList(list);
-            if (list != null && !list.isEmpty() && vm.error.getValue() == null) {
+            if (adapter != null) adapter.submitList(list);
+            if (list != null && !list.isEmpty() && vm.error.getValue() == null && errorBanner != null) {
                 errorBanner.setVisibility(View.GONE);
             }
         });
 
         vm.error.observe(this, e -> {
+            if (errorBanner == null) return;
             if (e == null || e.isEmpty()) {
                 errorBanner.setVisibility(View.GONE);
             } else {
@@ -246,15 +251,15 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
-    // --------------------------------------------------------------------------------------------
-    // Converter / Navigation
-    // --------------------------------------------------------------------------------------------
+    // ----------------- converter + navigation -----------------
 
-    /** Opens converter fragment inside the flipper (page 2) */
     private void openConverter(RateItem item) {
-        if (topAppBar != null && item != null) {
+        if (item == null) return;
+
+        if (topAppBar != null) {
             topAppBar.setTitle("GBP ↔ " + item.code);
         }
+
         getSupportFragmentManager().beginTransaction()
                 .replace(R.id.converterContainer, ConverterFragment.newInstance(item))
                 .addToBackStack("converter")
@@ -265,22 +270,19 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    /** Handles back navigation (converter → list) */
     private void goBackOrFinish() {
         if (vf != null && vf.getDisplayedChild() == 1) {
-            if (getSupportFragmentManager().getBackStackEntryCount() > 0)
+            if (getSupportFragmentManager().getBackStackEntryCount() > 0) {
                 getSupportFragmentManager().popBackStack();
+            }
             vf.showPrevious();
         } else {
             finish();
         }
     }
 
-    // --------------------------------------------------------------------------------------------
-    // Utilities
-    // --------------------------------------------------------------------------------------------
+    // ----------------- small helpers -----------------
 
-    /** Hide the soft keyboard and clear focus from the SearchView */
     private void hideKeyboardAndClearSearchFocus() {
         if (searchView != null) {
             searchView.clearFocus();
@@ -292,7 +294,7 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    /** Fetch RSS from network (runs on background thread) */
+    // download RSS on a background thread and pass it to the view model
     private void fetchRssAndRefresh() {
         new Thread(() -> {
             String rss = "";
@@ -321,7 +323,7 @@ public class MainActivity extends AppCompatActivity {
                 }
                 conn.disconnect();
 
-                // Trim to clean XML
+                // try to strip out anything before/after the actual RSS XML
                 if (rss != null && !rss.isEmpty()) {
                     int i = rss.indexOf("<?xml");
                     if (i >= 0) rss = rss.substring(i);
@@ -337,17 +339,21 @@ public class MainActivity extends AppCompatActivity {
 
             runOnUiThread(() -> {
                 if (finalProblem != null) {
-                    errorBanner.setText("Network error: " +
-                            (finalProblem.getMessage() == null
-                                    ? finalProblem.getClass().getSimpleName()
-                                    : finalProblem.getMessage()));
-                    errorBanner.setVisibility(View.VISIBLE);
+                    if (errorBanner != null) {
+                        errorBanner.setText("Network error: " +
+                                (finalProblem.getMessage() == null
+                                        ? finalProblem.getClass().getSimpleName()
+                                        : finalProblem.getMessage()));
+                        errorBanner.setVisibility(View.VISIBLE);
+                    }
                     return;
                 }
 
                 if (finalRss == null || finalRss.trim().isEmpty()) {
-                    errorBanner.setText("No data received. Check connection or try again.");
-                    errorBanner.setVisibility(View.VISIBLE);
+                    if (errorBanner != null) {
+                        errorBanner.setText("No data received. Check connection or try again.");
+                        errorBanner.setVisibility(View.VISIBLE);
+                    }
                 } else {
                     vm.refreshFromRssAsync(finalRss);
                     vm.setQuery("");
@@ -356,7 +362,6 @@ public class MainActivity extends AppCompatActivity {
         }).start();
     }
 
-    /** Find a rate by its currency code */
     private RateItem findByCode(List<RateItem> list, String code) {
         if (list == null || code == null) return null;
         for (RateItem r : list) if (code.equalsIgnoreCase(r.code)) return r;

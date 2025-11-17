@@ -1,15 +1,15 @@
 plugins {
     id 'com.android.application'
-    id 'org.jetbrains.kotlin.android'   // fine even if you have only Java sources
+    id 'org.jetbrains.kotlin.android'
 }
 
 android {
-    namespace 'org.me.gcu.cw_currency.s2432618'
+    namespace 'org.me.gcu.jang_sae_s2432618'
     compileSdk 34
 
     defaultConfig {
-        applicationId "org.me.gcu.cw_currency.s2432618"
-        minSdk 26                      // >= 26 for adaptive icons
+        applicationId "org.me.gcu.jang_sae_s2432618"
+        minSdk 26
         targetSdk 34
         versionCode 1
         versionName "1.0"
@@ -19,7 +19,8 @@ android {
     buildTypes {
         release {
             minifyEnabled false
-            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'),
+                    'proguard-rules.pro'
         }
     }
 
@@ -31,7 +32,6 @@ android {
         jvmTarget = '17'
     }
 
-    // Let local unit tests access Android-style resources if needed
     testOptions {
         unitTests.includeAndroidResources = true
     }
@@ -45,9 +45,8 @@ dependencies {
     implementation 'androidx.lifecycle:lifecycle-livedata:2.8.6'
     implementation 'androidx.work:work-runtime:2.9.1'
 
-    // --- Unit test libs ---
     testImplementation 'junit:junit:4.13.2'
-    testImplementation 'xmlpull:xmlpull:1.1.3.1'   // ✅ correct Maven Central artifact
+    testImplementation 'xmlpull:xmlpull:1.1.3.1'
     testImplementation 'net.sf.kxml:kxml2:2.3.0'
 
     androidTestImplementation 'androidx.test.ext:junit:1.2.1'
